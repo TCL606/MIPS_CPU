@@ -4,10 +4,8 @@ module CPU(reset, clk, out);
     //--------------Your code below-----------------------
     wire reset;
     wire clk;
-    wire out;
+    wire [31:0] out;
     
-    assign out = 0;
-
     reg [31:0] PC;
     wire [31:0] Instruction;
 	wire [1:0] PCSrc;
@@ -71,6 +69,7 @@ module CPU(reset, clk, out);
     end
 
     //--------------Your code above-----------------------
-
+        
+    assign out = ALUresult;
 endmodule
 	

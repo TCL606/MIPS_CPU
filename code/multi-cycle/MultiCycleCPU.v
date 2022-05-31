@@ -23,8 +23,8 @@ module MultiCycleCPU (reset, clk, out);
     //Input Clock Signals
     input reset;
     input clk;
-    output out;
-    assign out = 0;
+    output [31:0] out;
+    assign out = ALUOutput;
     
     //--------------Your code below-----------------------
     wire reset;
@@ -58,7 +58,7 @@ module MultiCycleCPU (reset, clk, out);
     wire [31:0] PC_new;
     wire [31:0] dataB;
     wire [31:0] dataA;
-    assign Address = IorD ? ALUOutput : PC_now;
+    assign Address = IorD ? ALUOutbeq : PC_now;
     InstAndDataMemory InstAndDataCtrler(reset, clk, Address, dataB, MemRead, MemWrite, MemData);
     assign Instruction = IRWrite ? MemData : Instruction;
 
@@ -75,7 +75,7 @@ module MultiCycleCPU (reset, clk, out);
 
     wire [31:0] ImmExtOut;
     wire [31:0] ImmExtShift;
-    ImmProcess Imm1(ExtOp, LuiOp, Instruction[15:0], ImmExtOut, ImmExtShift);
+    ImmProcess Imm1(ExtOp, LuiOp, {rd, Shamt, Funct}, ImmExtOut, ImmExtShift);
 
     wire [4:0] Rw;    // 0: rt; 1: rd; 2: ra
     assign Rw = RegDst == 2'b00 ? rt : 
@@ -86,11 +86,11 @@ module MultiCycleCPU (reset, clk, out);
                            MemtoReg == 2'b00 ? MDRout : ALUOutput;
     RegisterFile RF1(reset, clk, RegWrite, rs, rt, 
                         Rw, Write_data, dataA, dataB);
-
-    // wire [31:0] dataA_out;
-    // wire [31:0] dataB_out;
-    // RegTemp dataAReg(reset, clk, dataA, dataA_out);
-    // RegTemp dataBReg(reset, clk, dataB, dataB_out);
+                        
+    wire [31:0] dataA_out;
+    wire [31:0] dataB_out;
+    RegTemp dataAReg(reset, clk, dataA, dataA_out);
+    RegTemp dataBReg(reset, clk, dataB, dataB_out);
 
     wire Sign;
     wire [4:0] ALUCtrl;
@@ -99,10 +99,10 @@ module MultiCycleCPU (reset, clk, out);
     wire [31:0] ALUinA;
     wire [31:0] ALUinB;
     assign ALUinA = ALUSrcA == 2'b10 ? {27'h0000000, Shamt} :
-                        ALUSrcA == 2'b00 ? PC_now : dataA;
+                        ALUSrcA == 2'b00 ? PC_now : dataA_out;
     assign ALUinB = ALUSrcB == 2'b11 ? ImmExtShift :
                         ALUSrcB == 2'b10 ? ImmExtOut :
-                            ALUSrcB == 2'b01 ? 32'd04 : dataB;
+                            ALUSrcB == 2'b01 ? 32'd04 : dataB_out;
 
     wire [31:0] ALUOutput;
     wire Zero;
@@ -111,9 +111,9 @@ module MultiCycleCPU (reset, clk, out);
     wire [31:0] ALUOutbeq;
     RegTemp ALUOut1(reset, clk, ALUOutput, ALUOutbeq);
 
-    assign PC_new = PCSource == 2'b10 ? {PC_now[31:28], Instruction[25:0], 2'b00} : 
+    assign PC_new = PCSource == 2'b10 ? {PC_now[31:28], rs, rt, rd, Shamt, Funct, 2'b00} : 
                         PCSource == 2'b01 ? ALUOutbeq : 
-                            PCSource == 2'b11 ? dataA : ALUOutput;
+                            PCSource == 2'b11 ? dataA_out : ALUOutput;
 
     wire PCWrite_hat;
     assign PCWrite_hat = PCWrite | (Zero & PCWriteCond);

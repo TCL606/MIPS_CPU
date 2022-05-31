@@ -24,7 +24,7 @@ module test_cpu();
     
     reg reset;
     reg clk;
-    wire out;
+    wire [31:0] out;
     
     MultiCycleCPU MultiCycleCPU_1(reset, clk, out);
     

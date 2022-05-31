@@ -3,7 +3,7 @@ module test_cpu();
 	
 	reg reset;
 	reg clk;
-	wire out;
+	wire [31:0] out;
 	
 	CPU cpu1(reset, clk, out);
 	
